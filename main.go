@@ -57,7 +57,7 @@ func main() {
 
 	// Parse.
 	for _, ts := range o {
-		fmt.Printf("%s: %.2f\n", tagValFromScope(ts.GetScope(), Params.ByTag), ts.Points[0][1])
+		fmt.Printf("%20s: %.2f\n", tagValFromScope(ts.GetScope(), Params.ByTag), ts.Points[0][1])
 	}
 }
 
