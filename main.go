@@ -17,19 +17,23 @@ var Params struct {
 	AppKey string
 	Query  string
 	Span   int
-	ByTag  string
+	ByTags []string
 }
 
 func init() {
 	flag.StringVar(&Params.APIKey, "api-key", "", "Datadog API key")
 	flag.StringVar(&Params.AppKey, "app-key", "", "Datadog app key")
 	q := flag.String("query", "avg:system.load.1{*}", "Datadog metric query")
-	flag.IntVar(&Params.Span, "span", 300, "Query duration in seconds (now - span)")
-	flag.StringVar(&Params.ByTag, "by-tag", "host", "Metric tag to reference data by")
+	flag.IntVar(&Params.Span, "span", 300, "Query range in seconds (now - span)")
+	tags := flag.String("by-tags", "host", "Metric tags to reference data by (comma delimited)")
 
 	envy.Parse("DDQ")
 	flag.Parse()
 
+	// Get tags.
+	Params.ByTags = strings.Split(*tags, ",")
+
+	// Complete query string.
 	var b bytes.Buffer
 	b.WriteString(*q)
 	b.WriteString(fmt.Sprintf(".rollup(avg, %d)", Params.Span))
@@ -55,9 +59,27 @@ func main() {
 	o, err := client.QueryMetrics(start, time.Now().Unix(), Params.Query)
 	exitOnErr(err)
 
-	// Parse.
+	// Parse/print.
+	var t bytes.Buffer
 	for _, ts := range o {
-		fmt.Printf("%20s: %.2f\n", tagValFromScope(ts.GetScope(), Params.ByTag), ts.Points[0][1])
+		// Get the value for each tag, append
+		// to our output key.
+		for i, tag := range Params.ByTags {
+			v := tagValFromScope(ts.GetScope(), tag)
+
+			// If the tag isn't present.
+			if v == "" {
+				v = "null"
+			}
+			t.WriteString(v)
+			if i < len(Params.ByTags)-1 {
+				t.WriteString(",")
+			}
+		}
+
+		// Write key, metric value.
+		fmt.Printf("%20s: %.2f\n", t.String(), ts.Points[0][1])
+		t.Reset()
 	}
 }
 
