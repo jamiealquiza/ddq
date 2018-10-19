@@ -78,7 +78,7 @@ func main() {
 		}
 
 		// Write key, metric value.
-		fmt.Printf("%20s: %.2f\n", t.String(), ts.Points[0][1])
+		fmt.Printf("%20s: %.2f\n", t.String(), *ts.Points[0][1])
 		t.Reset()
 	}
 }
